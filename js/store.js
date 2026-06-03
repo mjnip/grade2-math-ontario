@@ -107,13 +107,19 @@
     save(p);
   }
 
+  // Generate a collision-resistant attempt id.
+  function newId() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return "a-" + crypto.randomUUID();
+    return "a-" + Date.now() + "-" + Math.random().toString(36).slice(2, 9);
+  }
+
   // Record a completed practice attempt. Always keeps full history and the
   // best score. Returns the new attempt. Mirrors to the backend when possible.
   function recordAttempt(id, score, total) {
     const p = load();
     const unit = Object.assign(emptyUnit(), p[id]);
     const attempt = {
-      id: "a-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      id: newId(),
       score: score,
       total: total,
       stars: stars(score, total),

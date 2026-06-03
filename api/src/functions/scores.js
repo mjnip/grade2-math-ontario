@@ -1,7 +1,7 @@
 "use strict";
 
 const { app } = require("@azure/functions");
-const { TableClient } = require("@azure/data-tables");
+const { TableClient, odata } = require("@azure/data-tables");
 const {
   sanitizeKey, studentPartition, tableConnectionString, SCORES_TABLE_NAME
 } = require("../shared");
@@ -59,7 +59,7 @@ async function handler(request, context) {
       });
       const attempts = [];
       const entities = client.listEntities({
-        queryOptions: { filter: `PartitionKey eq '${partition.replace(/'/g, "''")}'` }
+        queryOptions: { filter: odata`PartitionKey eq ${partition}` }
       });
       for await (const e of entities) {
         attempts.push({

@@ -2,6 +2,9 @@
 
 const { app } = require("@azure/functions");
 
+// How long to wait for Azure OpenAI before giving up (client falls back locally).
+const AZURE_OPENAI_TIMEOUT_MS = 25000;
+
 /*
  * questions — dynamically generate fresh practice questions with Azure OpenAI.
  *   POST /api/questions  { unitId, count } -> { questions: [...] }
@@ -89,7 +92,7 @@ async function callAzureOpenAI(messages, context) {
     "/chat/completions?api-version=" + encodeURIComponent(apiVersion);
 
   const controller = new AbortController();
-  const timeout = setTimeout(function () { controller.abort(); }, 25000);
+  const timeout = setTimeout(function () { controller.abort(); }, AZURE_OPENAI_TIMEOUT_MS);
   try {
     const res = await fetch(url, {
       method: "POST",
