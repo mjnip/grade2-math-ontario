@@ -41,9 +41,43 @@
     return Number(a) === Number(answer);
   }
 
+  /* ---------------- DYNAMIC QUESTIONS ---------------- */
+  // Validate a question object (from the backend or generator) so a malformed
+  // item can never break the quiz engine.
+  function isValidQuestion(q) {
+    if (!q || typeof q.prompt !== "string" || !q.prompt.trim()) return false;
+    if (q.type === "mc") {
+      return Array.isArray(q.choices) && q.choices.length >= 2 &&
+        Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.choices.length;
+    }
+    if (q.type === "num") {
+      return q.answer !== undefined && q.answer !== null && String(q.answer).trim() !== "";
+    }
+    return false;
+  }
+
+  // Fetch a fresh batch of questions for a unit. Tries the Azure OpenAI backend
+  // first and falls back to the offline procedural generator so the feature
+  // works even with no backend or while offline.
+  function fetchMoreQuestions(unit, count) {
+    const n = count || 5;
+    function local() {
+      return window.QuestionGen ? window.QuestionGen.generate(unit.id, n) : [];
+    }
+    if (window.Api && window.Api.getQuestions) {
+      return window.Api.getQuestions(unit.id, n)
+        .then(function (data) {
+          const valid = ((data && data.questions) || []).filter(isValidQuestion);
+          return valid.length ? valid : local();
+        })
+        .catch(local);
+    }
+    return Promise.resolve(local());
+  }
+
   /* ---------------- PRACTICE (graded quiz) ---------------- */
-  function renderPractice(mount, unit) {
-    const questions = unit.quiz;
+  function renderPractice(mount, unit, questionSet) {
+    const questions = (Array.isArray(questionSet) && questionSet.length) ? questionSet : unit.quiz;
     let index = 0;
     let score = 0;
 
@@ -155,7 +189,25 @@
 
       const actions = el("div", { class: "quiz-actions", style: "justify-content:center" });
       actions.appendChild(el("button", { class: "btn btn-big", text: "Try again 🔁",
-        onClick: function () { index = 0; score = 0; mount.innerHTML = ""; renderPractice(mount, unit); } }));
+        onClick: function () { mount.innerHTML = ""; renderPractice(mount, unit, questions); } }));
+
+      const moreBtn = el("button", { class: "btn btn-big btn-success", text: "➕ More questions" });
+      moreBtn.addEventListener("click", function () {
+        if (moreBtn.disabled) return;
+        moreBtn.disabled = true;
+        moreBtn.textContent = "✨ Making new questions…";
+        fetchMoreQuestions(unit, questions.length || 5).then(function (qs) {
+          if (!qs || !qs.length) {
+            moreBtn.disabled = false;
+            moreBtn.textContent = "➕ More questions";
+            return;
+          }
+          mount.innerHTML = "";
+          renderPractice(mount, unit, qs);
+        });
+      });
+      actions.appendChild(moreBtn);
+
       actions.appendChild(el("a", { class: "btn btn-secondary", href: "#/unit/" + unit.id + "/homework", text: "Do homework ✏️" }));
       actions.appendChild(el("a", { class: "btn btn-secondary", href: "#/", text: "🏠 Home" }));
       result.appendChild(actions);
