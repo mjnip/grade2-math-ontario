@@ -1,0 +1,202 @@
+/* =========================================================
+   Math Adventures — Grade 2 Ontario Math
+   Kid-friendly, accessible, responsive styles.
+   ========================================================= */
+
+:root {
+  --bg: #f4f8ff;
+  --surface: #ffffff;
+  --ink: #1f2937;
+  --ink-soft: #4b5563;
+  --brand: #2563eb;
+  --good: #16a34a;
+  --good-bg: #dcfce7;
+  --bad: #dc2626;
+  --bad-bg: #fee2e2;
+  --warn: #f59e0b;
+  --shadow: 0 6px 18px rgba(30, 64, 175, 0.12);
+  --radius: 18px;
+  --focus: 3px solid #1d4ed8;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: "Comic Sans MS", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  font-size: 18px;
+}
+
+.wrap { width: min(960px, 92vw); margin-inline: auto; }
+
+a { color: var(--brand); }
+
+/* ---- Focus & skip link (accessibility) ---- */
+:focus-visible { outline: var(--focus); outline-offset: 2px; border-radius: 8px; }
+
+.skip-link {
+  position: absolute; left: -999px; top: 0;
+  background: var(--brand); color: #fff; padding: .6rem 1rem; border-radius: 0 0 10px 0;
+  z-index: 100;
+}
+.skip-link:focus { left: 0; }
+
+/* ---- Header ---- */
+.site-header {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  box-shadow: var(--shadow);
+  position: sticky; top: 0; z-index: 20;
+}
+.header-inner { display: flex; align-items: center; justify-content: space-between; padding: .8rem 0; gap: 1rem; }
+.brand { display: flex; align-items: center; gap: .6rem; color: #fff; text-decoration: none; font-weight: 700; }
+.brand-emoji { font-size: 2rem; }
+.brand-text { display: flex; flex-direction: column; font-size: 1.3rem; line-height: 1.1; }
+.brand-text small { font-weight: 600; font-size: .8rem; opacity: .85; }
+
+/* ---- Buttons ---- */
+.btn {
+  font: inherit; font-weight: 700; cursor: pointer;
+  border: none; border-radius: 999px; padding: .7rem 1.3rem;
+  background: var(--brand); color: #fff;
+  box-shadow: 0 3px 0 rgba(0,0,0,.15);
+  transition: transform .08s ease, filter .15s ease;
+  min-height: 48px;
+}
+.btn:hover { filter: brightness(1.07); }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.btn-ghost { background: rgba(255,255,255,.18); box-shadow: none; }
+.btn-secondary { background: #64748b; }
+.btn-success { background: var(--good); }
+.btn-big { font-size: 1.15rem; padding: .9rem 1.6rem; }
+
+/* ---- Home dashboard ---- */
+.hero { text-align: center; padding: 1.6rem 0 .4rem; }
+.hero h1 { font-size: 2rem; margin: .2rem 0; }
+.hero p { color: var(--ink-soft); margin: .2rem 0 0; }
+
+.unit-grid {
+  display: grid; gap: 1.1rem; padding: 1.4rem 0 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.unit-card {
+  background: var(--surface); border-radius: var(--radius); padding: 1.2rem;
+  box-shadow: var(--shadow); text-decoration: none; color: var(--ink);
+  border-top: 8px solid var(--card, var(--brand));
+  display: flex; flex-direction: column; gap: .5rem;
+  transition: transform .12s ease;
+}
+.unit-card:hover { transform: translateY(-4px); }
+.unit-card .uc-emoji { font-size: 2.6rem; }
+.unit-card h3 { margin: 0; font-size: 1.3rem; }
+.unit-card .uc-desc { color: var(--ink-soft); font-size: .95rem; margin: 0; flex: 1; }
+.uc-progress { display: flex; align-items: center; gap: .4rem; font-size: .95rem; font-weight: 700; }
+.stars { letter-spacing: 2px; }
+
+/* ---- Unit page ---- */
+.crumbs { margin: 1rem 0 .4rem; font-size: .95rem; }
+.unit-head { display: flex; align-items: center; gap: .7rem; margin-bottom: .4rem; }
+.unit-head .uh-emoji { font-size: 2.4rem; }
+.unit-head h2 { margin: 0; }
+.overall { background: var(--surface); border-radius: var(--radius); padding: .8rem 1.1rem;
+  box-shadow: var(--shadow); color: var(--ink-soft); font-size: .98rem; }
+
+.tabs { display: flex; gap: .5rem; margin: 1.2rem 0; flex-wrap: wrap; }
+.tab {
+  font: inherit; font-weight: 700; cursor: pointer; text-decoration: none;
+  padding: .6rem 1.1rem; border-radius: 999px; background: #e5edff; color: #1e3a8a;
+  border: 2px solid transparent; min-height: 44px; display: inline-flex; align-items: center;
+}
+.tab[aria-current="page"] { background: var(--brand); color: #fff; }
+
+/* ---- Cards / lessons ---- */
+.card {
+  background: var(--surface); border-radius: var(--radius); padding: 1.2rem 1.3rem;
+  box-shadow: var(--shadow); margin-bottom: 1rem;
+}
+.card h3 { margin-top: 0; }
+.callout {
+  background: #fff7ed; border-left: 6px solid var(--warn);
+  padding: .7rem 1rem; border-radius: 10px; margin-top: .8rem; font-weight: 600;
+}
+.place-value { border-collapse: collapse; margin: .5rem 0; }
+.place-value th, .place-value td { border: 2px solid #c7d2fe; padding: .4rem .9rem; text-align: center; font-size: 1.1rem; }
+.place-value th { background: #eef2ff; }
+
+/* ---- Quiz / Practice ---- */
+.quiz-progress { font-weight: 700; color: var(--ink-soft); margin-bottom: .4rem; }
+.progressbar { height: 12px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 1rem; }
+.progressbar > span { display: block; height: 100%; background: var(--good); width: 0; transition: width .3s ease; }
+.question { font-size: 1.25rem; font-weight: 700; margin: .2rem 0 1rem; }
+
+.choices { display: grid; gap: .6rem; }
+.choice {
+  font: inherit; text-align: left; cursor: pointer;
+  background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 14px;
+  padding: .8rem 1rem; min-height: 52px; font-weight: 600;
+  transition: background .12s, border-color .12s;
+}
+.choice:hover:not([disabled]) { border-color: var(--brand); background: #eff6ff; }
+.choice.correct { background: var(--good-bg); border-color: var(--good); }
+.choice.wrong { background: var(--bad-bg); border-color: var(--bad); }
+
+.num-answer { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.num-answer input {
+  font: inherit; font-size: 1.3rem; padding: .6rem .8rem; border-radius: 12px;
+  border: 2px solid #cbd5e1; width: 130px; text-align: center;
+}
+
+.feedback { margin-top: 1rem; padding: .8rem 1rem; border-radius: 12px; font-weight: 700; display: none; }
+.feedback.show { display: block; }
+.feedback.ok { background: var(--good-bg); color: #166534; }
+.feedback.no { background: var(--bad-bg); color: #991b1b; }
+
+.quiz-actions { margin-top: 1.1rem; display: flex; gap: .6rem; flex-wrap: wrap; }
+
+/* ---- Results ---- */
+.result { text-align: center; }
+.result .big-stars { font-size: 2.6rem; letter-spacing: 6px; }
+.result .score { font-size: 2.2rem; font-weight: 800; margin: .3rem 0; }
+.result .msg { color: var(--ink-soft); font-size: 1.1rem; }
+
+/* ---- Homework ---- */
+.hw-item { display: flex; gap: .8rem; align-items: flex-start; padding: .8rem 0; border-bottom: 1px dashed #cbd5e1; }
+.hw-num { font-weight: 800; color: var(--brand); min-width: 1.6rem; }
+.hw-body { flex: 1; }
+.hw-body .hw-prompt { font-weight: 700; }
+.hw-body input.hw-text { font: inherit; padding: .45rem .6rem; border-radius: 10px; border: 2px solid #cbd5e1; width: 140px; }
+.hw-choices { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .4rem; }
+.hw-choice { padding: .45rem .9rem; border-radius: 999px; border: 2px solid #cbd5e1; background: #f8fafc; cursor: pointer; font: inherit; font-weight: 600; }
+.hw-choice.selected { border-color: var(--brand); background: #eff6ff; }
+.hw-mark { font-weight: 800; }
+.hw-mark.ok { color: var(--good); }
+.hw-mark.no { color: var(--bad); }
+.hw-answer { font-size: .9rem; color: var(--ink-soft); margin-top: .25rem; }
+
+/* ---- Footer ---- */
+.site-footer { margin-top: 2rem; padding: 1.4rem 0; color: var(--ink-soft); font-size: .85rem; text-align: center; }
+
+/* ---- Small screens ---- */
+@media (max-width: 520px) {
+  body { font-size: 17px; }
+  .hero h1 { font-size: 1.6rem; }
+  .brand-text { font-size: 1.1rem; }
+}
+
+/* ---- Print (homework worksheet) ---- */
+@media print {
+  .site-header, .site-footer, .tabs, .crumbs, #reset-btn, .skip-link,
+  .no-print, .hw-mark, .hw-answer { display: none !important; }
+  body { background: #fff; font-size: 13pt; color: #000; }
+  .card { box-shadow: none; border: 1px solid #999; }
+  .print-title { display: block !important; }
+  .hw-item { border-bottom: 1px solid #999; }
+  .hw-body input.hw-text { border: none; border-bottom: 1.5px solid #000; width: 90px; }
+}
+.print-title { display: none; }
