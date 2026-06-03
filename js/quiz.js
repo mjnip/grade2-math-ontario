@@ -222,8 +222,10 @@
   }
 
   /* ---------------- HOMEWORK (self-check) ---------------- */
-  function renderHomework(mount, unit) {
-    const items = unit.homework;
+  // questionSet (optional): a freshly generated batch. When omitted, the unit's
+  // built-in homework is used. This lets "✨ New questions" swap in dynamic items.
+  function renderHomework(mount, unit, questionSet) {
+    const items = (Array.isArray(questionSet) && questionSet.length) ? questionSet : unit.homework;
     const state = items.map(() => ({ selected: null, value: "" }));
 
     mount.appendChild(el("h3", { class: "print-title", text: "Homework — " + unit.title + " (Grade 2 Math)" }));
@@ -270,15 +272,34 @@
     const summary = el("p", { class: "quiz-progress no-print", "aria-live": "polite" });
     const actions = el("div", { class: "quiz-actions no-print" });
     const checkBtn = el("button", { class: "btn btn-big btn-success", text: "✅ Check answers" });
+    const newBtn = el("button", { class: "btn btn-big", text: "✨ New questions" });
     const printBtn = el("button", { class: "btn btn-secondary", text: "🖨️ Print" });
     const homeLink = el("a", { class: "btn btn-secondary", href: "#/", text: "🏠 Home" });
     actions.appendChild(checkBtn);
+    actions.appendChild(newBtn);
     actions.appendChild(printBtn);
     actions.appendChild(homeLink);
     mount.appendChild(summary);
     mount.appendChild(actions);
 
     printBtn.addEventListener("click", () => window.print());
+
+    // Generate a fresh set of homework questions (Azure OpenAI -> offline fallback)
+    // and re-render the page with them.
+    newBtn.addEventListener("click", function () {
+      if (newBtn.disabled) return;
+      newBtn.disabled = true;
+      newBtn.textContent = "✨ Making new questions…";
+      fetchMoreQuestions(unit, items.length || 8).then(function (qs) {
+        if (!qs || !qs.length) {
+          newBtn.disabled = false;
+          newBtn.textContent = "✨ New questions";
+          return;
+        }
+        mount.innerHTML = "";
+        renderHomework(mount, unit, qs);
+      });
+    });
 
     checkBtn.addEventListener("click", function () {
       let correct = 0;
