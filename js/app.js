@@ -1,11 +1,10 @@
 /* =========================================================
-   app.js — router, progress (localStorage), home + learn views
-   Depends on: window.CURRICULUM (curriculum.js), window.Quiz (quiz.js)
+   app.js — router, views, progress dashboard, student identity
+   Depends on: window.CURRICULUM, window.Quiz, window.Store, window.Api
    ========================================================= */
 (function () {
   "use strict";
 
-  const STORE_KEY = "g2math.progress.v1";
   const units = window.CURRICULUM;
   const mount = document.getElementById("app");
 
@@ -26,33 +25,13 @@
     return node;
   }
 
-  /* ---------- Progress store ---------- */
-  function loadProgress() {
-    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
-    catch (e) { return {}; }
-  }
-  function saveProgress(p) {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(p)); } catch (e) {}
-  }
-  function getUnitProgress(id) {
-    return loadProgress()[id] || { learned: false, bestScore: 0, total: 0, stars: 0 };
-  }
-  function markLearned(id) {
-    const p = loadProgress();
-    p[id] = Object.assign({ learned: false, bestScore: 0, total: 0, stars: 0 }, p[id], { learned: true });
-    saveProgress(p);
-  }
+  /* ---------- Progress store (delegates to window.Store) ---------- */
+  function getUnitProgress(id) { return window.Store.getUnitProgress(id); }
+  function markLearned(id) { window.Store.markLearned(id); }
   function saveQuizResult(id, score, total) {
-    const p = loadProgress();
-    const prev = p[id] || { learned: false, bestScore: 0, total: 0, stars: 0 };
-    if (score >= (prev.bestScore || 0)) {
-      prev.bestScore = score;
-      prev.total = total;
-      prev.stars = window.Quiz.starsFor(score, total);
-    }
-    prev.learned = true;
-    p[id] = prev;
-    saveProgress(p);
+    window.Store.recordAttempt(id, score, total);
+    // Refresh any open progress view after a new attempt is recorded.
+    if (location.hash.replace(/^#/, "") === "/progress") router();
   }
 
   function getUnit(id) { return units.find((u) => u.id === id); }
@@ -159,6 +138,141 @@
     window.Quiz.renderHomework(holder, unit);
   }
 
+  /* ---------- Progress dashboard (scores over time) ---------- */
+  function unitTitle(id) {
+    const u = getUnit(id);
+    return u ? (u.emoji + " " + u.title) : id;
+  }
+
+  // Tiny inline SVG sparkline of attempt percentages over time.
+  function sparkline(attempts) {
+    const w = 220, h = 44, pad = 4;
+    const pts = attempts.map(function (a) {
+      return a.total > 0 ? a.score / a.total : 0;
+    });
+    const svgNs = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNs, "svg");
+    svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+    svg.setAttribute("class", "sparkline");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Score trend across " + attempts.length + " attempts");
+    if (pts.length === 1) {
+      // Single attempt: draw a dot so there's something to see.
+      const cy = h - pad - pts[0] * (h - 2 * pad);
+      const dot = document.createElementNS(svgNs, "circle");
+      dot.setAttribute("cx", w / 2); dot.setAttribute("cy", cy);
+      dot.setAttribute("r", 4); dot.setAttribute("fill", "#2563eb");
+      svg.appendChild(dot);
+      return svg;
+    }
+    const step = (w - 2 * pad) / (pts.length - 1);
+    const coords = pts.map(function (p, i) {
+      const x = pad + i * step;
+      const y = h - pad - p * (h - 2 * pad);
+      return x.toFixed(1) + "," + y.toFixed(1);
+    });
+    const poly = document.createElementNS(svgNs, "polyline");
+    poly.setAttribute("points", coords.join(" "));
+    poly.setAttribute("fill", "none");
+    poly.setAttribute("stroke", "#2563eb");
+    poly.setAttribute("stroke-width", "3");
+    poly.setAttribute("stroke-linecap", "round");
+    poly.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(poly);
+    return svg;
+  }
+
+  function formatDate(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) +
+        " " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    } catch (e) { return ""; }
+  }
+
+  function renderProgress() {
+    document.title = "My Progress — Math Adventures";
+    mount.innerHTML = "";
+
+    const crumbs = el("p", { class: "crumbs" });
+    crumbs.appendChild(el("a", { href: "#/", text: "🏠 Home" }));
+    crumbs.appendChild(document.createTextNode("  ›  My Progress"));
+    mount.appendChild(crumbs);
+
+    const student = window.Store.getStudent();
+    mount.appendChild(el("div", { class: "unit-head" }, [
+      el("span", { class: "uh-emoji", text: "📈" }),
+      el("h2", { text: student ? (student.name + "’s Progress") : "My Progress" })
+    ]));
+
+    if (student && student.classCode) {
+      mount.appendChild(el("p", { class: "overall", text: "Class: " + student.classCode }));
+    } else if (!student) {
+      const tip = el("p", { class: "overall" });
+      tip.appendChild(document.createTextNode("Tip: "));
+      const link = el("a", { href: "#", text: "sign in" });
+      link.addEventListener("click", function (e) { e.preventDefault(); promptStudent(); });
+      tip.appendChild(link);
+      tip.appendChild(document.createTextNode(" with your name to save and sync your scores across devices."));
+      mount.appendChild(tip);
+    }
+
+    const all = window.Store.getAllProgress();
+    const ids = units.map(function (u) { return u.id; }).filter(function (id) {
+      return all[id] && all[id].attempts && all[id].attempts.length;
+    });
+
+    if (!ids.length) {
+      mount.appendChild(el("div", { class: "card" }, [
+        el("h3", { text: "No scores yet! 🌱" }),
+        el("p", { text: "Finish a Practice quiz and your scores will show up here, tracked over time." }),
+        el("a", { class: "btn", href: "#/", text: "Pick a unit" })
+      ]));
+      return;
+    }
+
+    ids.forEach(function (id) {
+      const prog = all[id];
+      const attempts = prog.attempts.slice().sort(function (a, b) {
+        return new Date(a.at) - new Date(b.at);
+      });
+      const latest = attempts[attempts.length - 1];
+
+      const card = el("div", { class: "card progress-card" });
+      const head = el("div", { class: "pc-head" }, [
+        el("h3", { text: unitTitle(id) }),
+        el("span", { class: "stars", text: window.Quiz.starString(prog.stars) })
+      ]);
+      card.appendChild(head);
+
+      const stats = el("div", { class: "pc-stats" }, [
+        el("span", { text: "Best: " + prog.bestScore + "/" + prog.total }),
+        el("span", { text: "Latest: " + latest.score + "/" + latest.total }),
+        el("span", { text: "Attempts: " + attempts.length })
+      ]);
+      card.appendChild(stats);
+      card.appendChild(sparkline(attempts));
+
+      // Recent attempts list (newest first, capped).
+      const recent = attempts.slice(-5).reverse();
+      const list = el("ul", { class: "attempt-list" });
+      recent.forEach(function (a) {
+        list.appendChild(el("li", {}, [
+          el("span", { class: "al-score", text: a.score + "/" + a.total }),
+          el("span", { class: "al-stars", text: window.Quiz.starString(a.stars) }),
+          el("span", { class: "al-date", text: formatDate(a.at) + (a.imported ? " (imported)" : "") })
+        ]));
+      });
+      card.appendChild(list);
+
+      card.appendChild(el("div", { class: "quiz-actions" }, [
+        el("a", { class: "btn btn-secondary", href: "#/unit/" + id + "/practice", text: "Practise again 📝" })
+      ]));
+      mount.appendChild(card);
+    });
+  }
+
+  /* ---------- Not found ---------- */
   function renderNotFound() {
     mount.innerHTML = "";
     mount.appendChild(el("div", { class: "card" }, [
@@ -174,6 +288,7 @@
     const parts = hash.split("/").filter(Boolean); // e.g. ["unit","number","learn"]
 
     if (parts.length === 0) return done(renderHome);
+    if (parts[0] === "progress") return done(renderProgress);
 
     if (parts[0] === "unit" && parts[1]) {
       const unit = getUnit(parts[1]);
@@ -192,12 +307,42 @@
     }
   }
 
+  /* ---------- Student identity ---------- */
+  function refreshStudentButton() {
+    const btn = document.getElementById("student-btn");
+    if (!btn) return;
+    const s = window.Store.getStudent();
+    btn.textContent = s ? ("👤 " + s.name) : "👤 Sign in";
+    btn.title = s ? "Change who is using the app" : "Set who is using the app";
+  }
+
+  function promptStudent() {
+    const current = window.Store.getStudent() || { name: "", classCode: "" };
+    const name = prompt("What's your name? (used to save and sync your scores)", current.name || "");
+    if (name === null) return; // cancelled
+    const trimmed = name.trim();
+    if (!trimmed) {
+      // Empty name clears the identity (back to local-only, on this device).
+      window.Store.clearStudent();
+      refreshStudentButton();
+      return;
+    }
+    const classCode = prompt("Class code? (optional — ask your teacher, or leave blank)", current.classCode || "");
+    window.Store.setStudent({ name: trimmed, classCode: classCode === null ? "" : classCode });
+    refreshStudentButton();
+    // Pull any existing scores for this student from the cloud, then refresh.
+    window.Store.syncFromServer().then(function () { router(); });
+  }
+
+  const studentBtn = document.getElementById("student-btn");
+  if (studentBtn) studentBtn.addEventListener("click", promptStudent);
+
   /* ---------- Reset progress ---------- */
   const resetBtn = document.getElementById("reset-btn");
   if (resetBtn) {
     resetBtn.addEventListener("click", function () {
-      if (confirm("Clear all saved progress and scores? This cannot be undone.")) {
-        localStorage.removeItem(STORE_KEY);
+      if (confirm("Clear all saved progress and scores on this device? This cannot be undone.")) {
+        window.Store.reset();
         router();
       }
     });
@@ -205,6 +350,11 @@
 
   window.App = { saveQuizResult, markLearned, getUnitProgress };
 
+  // Boot: show current student, pull cloud scores if signed in, then render.
+  refreshStudentButton();
   window.addEventListener("hashchange", router);
+  if (window.Store.getStudent()) {
+    window.Store.syncFromServer().then(function () { router(); });
+  }
   router();
 })();

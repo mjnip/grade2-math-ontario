@@ -19,9 +19,14 @@ follows the five Ontario strands and includes **Learn**, **Practice** (a graded 
 
 - **Learn → Practice → Homework** loop for every unit
 - Instant per-question feedback, scores, and ⭐ ratings
+- **📈 Score tracker** — every Practice attempt is saved, so students can see their
+  scores **over time** (best, latest, attempt count, and a trend sparkline)
+- **➕ More questions** — request a fresh batch of practice questions on demand to
+  keep testing a student (Azure OpenAI when hosted, with an offline fallback generator)
+- **Optional cloud state** — sign in with a name (+ class code) to save and sync
+  score history across devices via Azure
 - Homework with **Check answers** and a **printable** worksheet
-- Progress & best scores saved on the device (localStorage)
-- 100% static — no accounts, no server, works offline
+- Progress & best scores saved on the device (localStorage) and works offline
 - Responsive and accessible (keyboard friendly, high contrast, big buttons)
 
 ## Run it
@@ -38,16 +43,33 @@ python -m http.server 8000
 # then visit http://localhost:8000
 ```
 
+The app works fully offline. The score tracker uses `localStorage`, and **More
+questions** falls back to a built-in generator when no backend is configured.
+
 ## Project structure
 
 ```
-index.html          App shell
-styles.css          Styling + print styles
-js/curriculum.js    All unit content, quizzes, homework
-js/quiz.js          Quiz + homework engine
-js/app.js           Router, state, progress
-specs/              spec.md, plan.md, tasks.md (spec-kit artifacts)
+index.html              App shell
+styles.css              Styling + print styles
+staticwebapp.config.json  Azure Static Web Apps routing
+js/curriculum.js        All unit content, quizzes, homework
+js/quiz.js              Quiz + homework engine (+ dynamic questions)
+js/store.js             Student identity + score history (with cloud sync)
+js/generator.js         Offline procedural question generator (fallback)
+js/api.js               Client for the Azure Functions backend
+js/config.js            Runtime config (API base URL)
+js/app.js               Router, views, progress dashboard
+api/                    Azure Functions API (scores + question generation)
+infra/                  Bicep infrastructure (Static Web App, Storage, OpenAI)
+specs/                  spec.md, plan.md, tasks.md (spec-kit artifacts)
 ```
+
+## Hosting on Azure
+
+The app can be hosted on **Azure Static Web Apps**, which also runs the bundled
+**Azure Functions** API for cloud score history (Table Storage) and dynamic
+question generation (**Azure OpenAI**). See
+[`docs/azure-deployment.md`](./docs/azure-deployment.md) for full setup steps.
 
 ## Note
 

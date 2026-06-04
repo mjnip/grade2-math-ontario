@@ -1,0 +1,6 @@
+# Azure Functions
+node_modules/
+local.settings.json
+bin/
+obj/
+.azure/
