@@ -1,7 +1,5 @@
 "use strict";
 
-const { app } = require("@azure/functions");
-
 // How long to wait for Azure OpenAI before giving up (client falls back locally).
 const AZURE_OPENAI_TIMEOUT_MS = 25000;
 
@@ -152,12 +150,5 @@ async function handler(request, context) {
   }
   return jsonResponse(200, { questions });
 }
-
-app.http("questions", {
-  methods: ["POST"],
-  authLevel: "anonymous",
-  route: "questions",
-  handler
-});
 
 module.exports = { handler, isValidQuestion, normalize, UNIT_TOPICS };

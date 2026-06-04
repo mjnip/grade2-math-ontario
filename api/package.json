@@ -2,7 +2,6 @@
   "name": "grade2-math-api",
   "version": "1.0.0",
   "description": "Azure Functions API for Math Adventures: score history (Table Storage) and dynamic question generation (Azure OpenAI).",
-  "main": "src/functions/*.js",
   "scripts": {
     "start": "func start",
     "test": "node --test"

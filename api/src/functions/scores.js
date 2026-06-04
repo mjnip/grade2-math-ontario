@@ -1,6 +1,5 @@
 "use strict";
 
-const { app } = require("@azure/functions");
 const { TableClient, odata } = require("@azure/data-tables");
 const {
   sanitizeKey, studentPartition, tableConnectionString, SCORES_TABLE_NAME
@@ -103,16 +102,12 @@ async function handler(request, context) {
 
     return jsonResponse(405, { error: "Method not allowed." });
   } catch (err) {
+    // A storage outage / policy restriction must never crash the endpoint:
+    // degrade gracefully so the client falls back to local score history.
     context.error("scores function failed", err);
-    return jsonResponse(500, { error: "Internal error handling scores." });
+    if (request.method === "GET") return jsonResponse(200, { attempts: [] });
+    return jsonResponse(503, { error: "Score storage is temporarily unavailable." });
   }
 }
-
-app.http("scores", {
-  methods: ["GET", "POST"],
-  authLevel: "anonymous",
-  route: "scores",
-  handler
-});
 
 module.exports = { handler };
